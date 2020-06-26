@@ -1,0 +1,5 @@
+python train_MDN.py --training_input NNinput_pos2_training.h5 --training_output Trained --outFile pos2 --network_type 2particle --config pos2config.json --epochs 150
+
+conda create --name=MDNtraining_TF python=3.6 numpy scipy matplotlib h5py tensorflow keras jupyter
+
+C:\Users\alexc\OneDrive\Projects\pixel-mdn-training-master
