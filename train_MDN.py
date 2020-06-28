@@ -122,20 +122,31 @@ def train_nn(training_input,
 
     if network_type == '1particle':
         output_layer = [mixture_density(1)(h)]
-        target_values = [y_train[:,0:2]]
+        target_values = y_train[:,0:2]
+        inputDataSet = tf.data.Dataset.from_tensor_slices((x_train, target_values)).batch(100)
     elif network_type == '2particle':
         output_layer = [mixture_density(1)(h),mixture_density(1)(h)]
-        target_values = [y_train[:,0:2], y_train[:,2:4]]
+        particle1 = y_train[:,0:2]
+        particle2 = y_train[:,2:4]
+        target_values = np.array([(i, j) for i, j in zip(particle1, particle2)])
+        print("Target Values Shape:" + target_values.shape)
+        inputDataSet = tf.data.Dataset.from_tensor_slices((x_train, target_values)).batch(100)
     elif network_type == '3particle':
         output_layer = [mixture_density(1)(h),mixture_density(1)(h),mixture_density(1)(h)]
-        target_values = [y_train[:,0:2], y_train[:,2:4], y_train[:,4:6]]
+        particle1 = y_train[:,0:2]
+        particle2 = y_train[:,2:4]
+        particle3 = y_train[:,4:6]
+        target_values = np.array([(i, j, k) for i, j , k in zip(particle1, particle2, particle3)])
+        print("Target Values Shape:" + target_values.shape)
     else:
         raise Error('network_type should be either 1particle, 2particle or 3particle') 
     model = keras.models.Model(inputs=inputs, outputs=output_layer)
 
     plot_model(model, to_file= training_output+'/'+outFile+'.png', show_shapes=True)
 
-    inputDataSet = tf.data.Dataset.from_tensor_slices((x_train, target_values[0])).batch(100)
+    print(len(x_train))
+
+    
 
     
 
