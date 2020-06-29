@@ -42,7 +42,7 @@ def train_nn(training_input,
             regularizer,
             epochs,
             #momentum=0.4,
-            #batch=60,
+            batch,
             #min_epochs=10,
             #max_epochs=230,
             ###patience_increase=1.75,
@@ -123,18 +123,24 @@ def train_nn(training_input,
     if network_type == '1particle':
         output_layer = [mixture_density(1)(h)]
         target_values = [y_train[:,0:2]]
-        inputDataSet = tf.data.Dataset.from_tensor_slices((x_train, target_values[0]))
+        trainDataSet = tf.data.Dataset.from_tensor_slices((x_train, target_values[0]))
     elif network_type == '2particle':
         output_layer = [mixture_density(1)(h),mixture_density(1)(h)]
         target_values = [y_train[:,0:2], y_train[:,2:4]]
-        inputDataSet = tf.data.Dataset.from_tensor_slices((x_train, {"concatenate": target_values[0], "concatenate_1": target_values[1]}))
+        trainDataSet = tf.data.Dataset.from_tensor_slices((x_train, {"concatenate": target_values[0], "concatenate_1": target_values[1]}))
     elif network_type == '3particle':
         output_layer = [mixture_density(1)(h),mixture_density(1)(h),mixture_density(1)(h)]
         target_values = [y_train[:,0:2], y_train[:,2:4], y_train[:,4:6]]
-        inputDataSet = tf.data.Dataset.from_tensor_slices((x_train, {"concatenate": target_values[0], "concatenate_1": target_values[1], "concatenate_2": target_values[2]}))
+        trainDataSet = tf.data.Dataset.from_tensor_slices((x_train, {"concatenate": target_values[0], "concatenate_1": target_values[1], "concatenate_2": target_values[2]}))
     else:
-        raise Error('network_type should be either 1particle, 2particle or 3particle') 
-    inputDataSet = inputDataSet.batch(1000)
+        raise Error('network_type should be either 1particle, 2particle or 3particle')
+    dataSetSize = len(target_values[0])
+    
+    testDataSet = trainDataSet.take(int(dataSetSize*0.2))
+    trainDataSet = trainDataSet.skip(int(dataSetSize*0.2))
+
+    testDataSet = testDataSet.batch(batch)
+    trainDataSet = trainDataSet.batch(batch)
     
     model = keras.models.Model(inputs=inputs, outputs=output_layer)
     plot_model(model, to_file= training_output+'/'+outFile+'.png', show_shapes=True)
@@ -150,9 +156,9 @@ def train_nn(training_input,
 
     loss_record = LossHistory()
     history = model.fit(
-        inputDataSet,
+        x=trainDataSet,
         epochs=epochs,
-        #validation_data=valid_data,
+        validation_data=testDataSet,
         callbacks=[
             keras.callbacks.ModelCheckpoint(training_output+'/'+outFile+'.h5', verbose=1, save_best_only=True),
             loss_record
@@ -204,7 +210,7 @@ def mixture_density_loss(nb_components, target_dimension=2):
 
     """ Compute the mixture density loss:
         begin{eqnarray}
-        P(Y|X) = \sum_i P(C_i) N(Y|mu_i(X), beta_i(X))
+        P(Y|X) = sum_i P(C_i) N(Y|mu_i(X), beta_i(X))
         Loss(Y|X) = - log(P(Y|X))
         end{eqnarray}
     """
