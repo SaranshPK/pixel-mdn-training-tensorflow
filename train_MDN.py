@@ -118,30 +118,29 @@ def train_nn(training_input,
         h = Dense(structure[l+1], activation='relu', kernel_regularizer=l2(regularizer))(h)
 
 
-#================================== Build the model =============================================================
+#================================== Build the model and dataset=============================================================
 
     if network_type == '1particle':
         output_layer = [mixture_density(1)(h)]
         target_values = [y_train[:,0:2]]
-        inputDataSet = tf.data.Dataset.from_tensor_slices((x_train, target_values[0])).batch(100)
+        inputDataSet = tf.data.Dataset.from_tensor_slices((x_train, target_values[0]))
     elif network_type == '2particle':
         output_layer = [mixture_density(1)(h),mixture_density(1)(h)]
         target_values = [y_train[:,0:2], y_train[:,2:4]]
-        inputDataSet = tf.data.Dataset.from_tensor_slices((x_train, {"concatenate": target_values[0], "concatenate_1": target_values[1]})).batch(100)
+        inputDataSet = tf.data.Dataset.from_tensor_slices((x_train, {"concatenate": target_values[0], "concatenate_1": target_values[1]}))
     elif network_type == '3particle':
         output_layer = [mixture_density(1)(h),mixture_density(1)(h),mixture_density(1)(h)]
         target_values = [y_train[:,0:2], y_train[:,2:4], y_train[:,4:6]]
+        inputDataSet = tf.data.Dataset.from_tensor_slices((x_train, {"concatenate": target_values[0], "concatenate_1": target_values[1], "concatenate_2": target_values[2]}))
     else:
         raise Error('network_type should be either 1particle, 2particle or 3particle') 
+    inputDataSet = inputDataSet.batch(1000)
+    
     model = keras.models.Model(inputs=inputs, outputs=output_layer)
-
     plot_model(model, to_file= training_output+'/'+outFile+'.png', show_shapes=True)
 
     print(len(x_train))
 
-    
-
-    
 
     model.compile(
         optimizer=keras.optimizers.Adam(lr=learning_rate, clipnorm=1),
@@ -211,9 +210,9 @@ def mixture_density_loss(nb_components, target_dimension=2):
     """
 
     def loss(y_true, y_pred):
-        print(type(y_pred))
+        print("y_pred type: " + str(type(y_pred)))
         batch_size = K.shape(y_pred)[0]
-        print(batch_size)
+        print("batch size: " + str(batch_size))
 
 
         #y_true = y_true[:,0:2]
